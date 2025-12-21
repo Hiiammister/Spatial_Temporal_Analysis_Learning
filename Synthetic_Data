@@ -1,0 +1,114 @@
+import numpy as np
+import pandas as pd
+import random
+
+# -----------------------------
+# CONFIGURATION (SCALE HERE)
+# -----------------------------
+NUM_MATCHES = 5
+ROUNDS_PER_MATCH = 30
+PLAYERS_PER_MATCH = 10
+
+ROUND_DURATION = 120           # seconds
+TICK_RATE = 0.25               # seconds (4 events/sec)
+
+MAP_WIDTH = 1200
+MAP_HEIGHT = 1200
+
+WEAPONS = ["rifle", "smg", "sniper", "pistol"]
+EVENTS = ["move", "shoot", "kill", "death", "plant", "defuse"]
+
+PLAYER_BEHAVIOR = {
+    "aggressive": {"speed": 6, "shoot_prob": 0.08, "kill_prob": 0.03},
+    "balanced": {"speed": 4, "shoot_prob": 0.05, "kill_prob": 0.015},
+    "passive": {"speed": 2, "shoot_prob": 0.02, "kill_prob": 0.005}
+}
+
+# -----------------------------
+# DATA GENERATION
+# -----------------------------
+rows = []
+
+for match_id in range(1, NUM_MATCHES + 1):
+
+    players = {}
+    for p in range(1, PLAYERS_PER_MATCH + 1):
+        players[p] = {
+            "behavior": random.choice(list(PLAYER_BEHAVIOR.keys())),
+            "team": "T" if p <= 5 else "CT",
+            "weapon": random.choice(WEAPONS)
+        }
+
+    for round_id in range(1, ROUNDS_PER_MATCH + 1):
+
+        player_state = {}
+        for p in players:
+            player_state[p] = {
+                "x": random.randint(100, MAP_WIDTH - 100),
+                "y": random.randint(100, MAP_HEIGHT - 100),
+                "health": 100
+            }
+
+        t = 0.0
+        while t < ROUND_DURATION:
+            t += TICK_RATE
+
+            for player_id, info in players.items():
+                state = player_state[player_id]
+                behavior = PLAYER_BEHAVIOR[info["behavior"]]
+
+                # Movement
+                dx = np.random.randint(-behavior["speed"], behavior["speed"] + 1)
+                dy = np.random.randint(-behavior["speed"], behavior["speed"] + 1)
+
+                state["x"] = int(np.clip(state["x"] + dx, 0, MAP_WIDTH))
+                state["y"] = int(np.clip(state["y"] + dy, 0, MAP_HEIGHT))
+
+                velocity = np.sqrt(dx**2 + dy**2)
+
+                event = "move"
+                r = random.random()
+
+                if r < behavior["kill_prob"] and state["health"] > 0:
+                    event = "kill"
+                elif r < behavior["kill_prob"] + behavior["shoot_prob"]:
+                    event = "shoot"
+                elif r < behavior["kill_prob"] + behavior["shoot_prob"] + 0.002:
+                    event = random.choice(["plant", "defuse"])
+
+                rows.append([
+                    match_id,
+                    round_id,
+                    player_id,
+                    info["team"],
+                    state["x"],
+                    state["y"],
+                    round(velocity, 2),
+                    round(t, 2),
+                    event,
+                    state["health"],
+                    info["weapon"]
+                ])
+
+# -----------------------------
+# SAVE DATASET
+# -----------------------------
+df = pd.DataFrame(rows, columns=[
+    "match_id",
+    "round_id",
+    "player_id",
+    "team",
+    "x",
+    "y",
+    "velocity",
+    "timestamp",
+    "event",
+    "health",
+    "weapon"
+])
+
+df.to_csv("synthetic_fps_spatiotemporal.csv", index=False)
+
+print("✅ Large dataset generated")
+print("Rows:", len(df))
+print(df.head())

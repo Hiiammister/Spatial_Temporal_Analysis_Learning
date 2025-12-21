@@ -1,0 +1,51 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Load data
+df = pd.read_csv("large_synthetic_fps_spatiotemporal.csv")
+
+# Filter one match and one player
+match_id = 1
+player_id = 1
+
+player_df = df[(df["match_id"] == match_id) &
+               (df["player_id"] == player_id)]
+
+plt.figure(figsize=(8, 8))
+
+# Heatmap (same player)
+sns.kdeplot(
+    x=player_df["x"],
+    y=player_df["y"],
+    fill=True,
+    cmap="Reds",
+    alpha=0.5,
+    thresh=0.05
+)
+
+# Trajectory
+plt.plot(
+    player_df["x"],
+    player_df["y"],
+    color="blue",
+    linewidth=1.5,
+    label="Trajectory"
+)
+
+# Start & end
+plt.scatter(player_df.iloc[0]["x"], player_df.iloc[0]["y"],
+            color="green", s=80, label="Start")
+plt.scatter(player_df.iloc[-1]["x"], player_df.iloc[-1]["y"],
+            color="black", s=80, label="End")
+
+plt.xlim(0, 1024)
+plt.ylim(0, 1024)
+plt.gca().set_aspect("equal", adjustable="box")
+
+plt.title("Player Trajectory with Aligned Heatmap")
+plt.xlabel("X Position")
+plt.ylabel("Y Position")
+plt.legend()
+plt.tight_layout()
+plt.show()
