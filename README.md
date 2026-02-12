@@ -52,12 +52,12 @@ source .venv/bin/activate
 pip install numpy pandas matplotlib seaborn scikit-learn
 ```
 ## Data format
-```bash
+
 The scripts use the provided synthetic CSVs, which generally represent movement data with:
 an entity id (player/agent)
 x, y coordinates
 a time index (frame / timestamp)
-```
+
 ## How to run:
 ```bash
 python check_data.py
